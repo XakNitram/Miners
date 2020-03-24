@@ -9,6 +9,7 @@ pillow = "*"
 
 [packages]
 pyglet = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"
