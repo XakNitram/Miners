@@ -217,8 +217,7 @@ class Simulation:
         self.batch = pyglet.graphics.Batch()
         self.camera = Camera(0., 0., width, height)
 
-        self.chunk = Chunk(0, (width / 2 - 256, height / 2 - 256))
-        self.chunk.enable(self.batch)
+        self.board = Board(self.batch, self.camera, self.width, self.height)
 
     def update(self, dt: float):
         dx = self.keys[pyglet.window.key.A] - self.keys[pyglet.window.key.D]
