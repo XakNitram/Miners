@@ -133,6 +133,12 @@ class Chunk:
 
             self.disabled = False
 
+    @property
+    def rectangle(self) -> Rectangle:
+        ox, oy = self.offset
+        scale = 16 * Block.size
+        return Rectangle(ox, oy, scale, scale)
+
 
 class Board:
     """Collection of chunks."""
