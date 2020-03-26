@@ -180,10 +180,11 @@ class Camera:
         self.width = width
         self.height = height
 
-    def project(self, dx, dy):
+    def move(self, dx, dy):
         self.x -= 10. * dx
         self.y -= 10. * dy
 
+    def project(self):
         pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
         pyglet.gl.glLoadIdentity()
         pyglet.gl.glOrtho(
@@ -222,7 +223,10 @@ class Simulation:
     def update(self, dt: float):
         dx = self.keys[pyglet.window.key.A] - self.keys[pyglet.window.key.D]
         dy = self.keys[pyglet.window.key.S] - self.keys[pyglet.window.key.W]
-        self.camera.project(dx, dy)
+        self.camera.move(dx, dy)
+
+        # Do last. Just superstition.
+        self.camera.project()
 
     def on_draw(self):
         self.window.clear()
