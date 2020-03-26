@@ -14,7 +14,7 @@ else, we add to the batch.
 """
 from dataclasses import dataclass
 from math import cos, sin
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 import numpy as np
 import pyglet
@@ -52,7 +52,7 @@ class Shape:
     def add_to_batch(
             self, batch: pyglet.graphics.Batch,
             group: pyglet.graphics.Group = None,
-            *data: str
+            *data: Union[str, Tuple[str, Union[Tuple[float, ...], List[float]]]]
     ) -> pyglet.graphics.vertexdomain.VertexList:
         return batch.add_indexed(
             4, self.mode, group,
@@ -122,9 +122,9 @@ class Chunk:
             for i in range(16):
                 for j in range(16):
                     block = self.data[i * 16 + j]
-                    block.vbo = batch.add_indexed(
-                        4, Block.shape.mode, None, Block.shape.indices,
-                        'v4f/stream', ('c3f/static', [1., 0., 0.] * 4)
+                    block.vbo = block.shape.add_to_batch(
+                        batch, None, 'v4f/stream',
+                        ('c3f/static', [1., 0., 0.] * 4)
                     )
                     block.update(
                         float((i & 0xFF) * block.size + ox),
