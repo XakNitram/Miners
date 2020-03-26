@@ -21,6 +21,8 @@ import pyglet
 
 from pyglet.graphics.vertexdomain import VertexList
 
+from intersections import Rectangle
+
 
 @dataclass
 class Shape:
@@ -72,22 +74,6 @@ line_quad = Shape(
     pyglet.gl.GL_LINES,
     [0, 1, 1, 2, 2, 3, 3, 0]
 )
-
-
-@dataclass
-class Rectangle:
-    x: float
-    y: float
-    w: float
-    h: float
-
-    def intersects(self, rect: "Rectangle"):
-        return not (
-            rect.x > self.x + self.w
-            or rect.x + rect.w < self.x
-            or rect.y > self.y + self.h
-            or rect.y + rect.h < self.y
-        )
 
 
 class Block:
