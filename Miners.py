@@ -225,9 +225,6 @@ class Simulation:
         dy = self.keys[pyglet.window.key.S] - self.keys[pyglet.window.key.W]
         self.camera.move(dx, dy)
 
-        # Do last. Just superstition.
-        self.camera.project()
-
     def on_draw(self):
         self.window.clear()
         self.batch.draw()
@@ -241,6 +238,8 @@ class Simulation:
                 self.width - 75, self.height - 25
             ])
         )
+
+        self.camera.project()
 
     def setup(self):
         pyglet.clock.schedule_interval(
