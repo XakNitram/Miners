@@ -118,8 +118,8 @@ class Board:
 class Camera:
     __slots__ = ['x', 'y', "width", "height"]
 
-    near = -50
-    far = 50
+    near = -1.
+    far = 1.
 
     def __init__(self, x, y, width, height):
         self.x = x
@@ -128,15 +128,18 @@ class Camera:
         self.height = height
 
     def project(self, dx, dy):
-        # pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
-        # pyglet.gl.glLoadIdentity()
-        # pyglet.gl.glViewport(self.x, self.y, self.width, self.height)
-        # pyglet.gl.glOrtho(0, self.width, 0, self.height, self.near, self.far)
-        # pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
+        self.x -= 10. * dx
+        self.y -= 10. * dy
 
-        self.x += 10. * dx
-        self.y += 10. * dy
-        pyglet.gl.glTranslatef(10. * dx, 10. * dy, 0.)
+        pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
+        pyglet.gl.glLoadIdentity()
+        pyglet.gl.glOrtho(
+            self.x, self.x + self.width,
+            self.y, self.y + self.height,
+            self.near, self.far
+        )
+
+        pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
 
 
 class Simulation:
