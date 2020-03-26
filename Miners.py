@@ -14,10 +14,12 @@ else, we add to the batch.
 """
 from dataclasses import dataclass
 from math import cos, sin
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 import pyglet
+
+from pyglet.graphics.vertexdomain import VertexList
 
 
 @dataclass
@@ -77,9 +79,9 @@ class Block:
     shape = line_quad
     size = 32
 
-    def __init__(self, vbo: pyglet.graphics.vertexdomain.VertexList):
+    def __init__(self):
+        self.vbo: Optional[VertexList] = None
         self.broken = False
-        self.vbo = vbo
 
     def update(self, x: float, y: float):
         self.vbo.vertices = self.shape.transform(
@@ -88,26 +90,38 @@ class Block:
 
 
 class Chunk:
-    def __init__(self, offset: Tuple[float, float]):
-        self.data: List[Block] = [None] * (16 * 16)
-        self.offset = offset
+    __slots__ = ["data", "name", "offset", "disabled"]
 
-    def fill(self, batch: pyglet.graphics.Batch):
-        ox, oy = self.offset
-        for i in range(16):
-            for j in range(16):
-                block = Block(
-                    batch.add_indexed(
+    def __init__(self, name: int, offset: Tuple[float, float]):
+        self.data: List[Block] = [Block() for i in range(256)]
+        self.name = name
+        self.offset = offset
+        self.disabled = True
+
+    def disable(self):
+        if not self.disabled:
+            for i in range(256):
+                self.data[i].vbo.delete()
+                self.data[i].vbo = None
+
+            self.disabled = True
+
+    def enable(self, batch):
+        if self.disabled:
+            ox, oy = self.offset
+            for i in range(16):
+                for j in range(16):
+                    block = self.data[i * 16 + j]
+                    block.vbo = batch.add_indexed(
                         4, Block.shape.mode, None, Block.shape.indices,
                         'v4f/stream', ('c3f/static', [1., 0., 0.] * 4)
                     )
-                )
+                    block.update(
+                        float((i & 0xFF) * block.size + ox),
+                        float((j & 0xFF) * block.size + oy)
+                    )
 
-                self.data[i * 16 + j] = block
-                block.update(
-                    float((i & 0xFF) * block.size + ox),
-                    float((j & 0xFF) * block.size + oy)
-                )
+            self.disabled = False
 
 
 class Board:
@@ -159,8 +173,8 @@ class Simulation:
         self.batch = pyglet.graphics.Batch()
         self.camera = Camera(0., 0., width, height)
 
-        self.chunk = Chunk((width / 2 - 256, height / 2 - 256))
-        self.chunk.fill(self.batch)
+        self.chunk = Chunk(0, (width / 2 - 256, height / 2 - 256))
+        self.chunk.enable(self.batch)
 
     def update(self, dt: float):
         dx = self.keys[pyglet.window.key.A] - self.keys[pyglet.window.key.D]
