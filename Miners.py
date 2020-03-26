@@ -41,6 +41,14 @@ class Shape:
             [dx,               dy,              0., 1.]
         ], dtype=float)
 
+    def transform_no_rotate(self, dx: float, dy: float, sx: float, sy: float):
+        return self.mesh @ np.array([
+            [sx, 0., 0., 0.],
+            [0., sy, 0., 0.],
+            [0., 0., 1., 0.],
+            [dx, dy, 0., 1.]
+        ], dtype=float)
+
     def add_to_batch(
             self, batch: pyglet.graphics.Batch,
             group: pyglet.graphics.Group = None,
@@ -86,8 +94,8 @@ class Block:
         self.broken = False
 
     def update(self, x: float, y: float):
-        self.vbo.vertices = self.shape.transform(
-            x, y, 0., self.size, self.size
+        self.vbo.vertices = self.shape.transform_no_rotate(
+            x, y, self.size, self.size
         ).flatten()
 
 
