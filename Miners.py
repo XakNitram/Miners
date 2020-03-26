@@ -109,6 +109,8 @@ class Chunk:
         self.disabled = True
 
     def disable(self):
+        """Disable the chunk. Will be later converted to asynchronous code."""
+
         if not self.disabled:
             for i in range(256):
                 self.data[i].vbo.delete()
@@ -117,6 +119,8 @@ class Chunk:
             self.disabled = True
 
     def enable(self, batch):
+        """Enable the chunk. Will be later converted to asynchronous code."""
+
         if self.disabled:
             ox, oy = self.offset
             for i in range(16):
