@@ -23,8 +23,8 @@ class Rectangle:
         """
         zyyyz ) where:
         xooox )   o = Rectangle(..., ..., o, o) (original)
-        xooox )   x = Rectangle(..., ..., x, 0) (scale x)
-        xooox )   y = Rectangle(..., ..., 0, y) (scale y)
+        xooox )   x = Rectangle(..., ..., x, o) (scale x)
+        xooox )   y = Rectangle(..., ..., o, y) (scale y)
         zyyyz )   z = Rectangle(..., ..., x, y) (corners)
         """
         return Rectangle(
