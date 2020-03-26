@@ -142,7 +142,30 @@ class Chunk:
 
 class Board:
     """Collection of chunks."""
-    pass
+    def __init__(self, batch, camera, width, height):
+        self.batch = batch
+        self.camera = camera
+
+        # We only need to load 9 chunks at any time,
+        # but we'd need to find some way to cache
+        # the already loaded chunks that are out of view.
+        self.chunks = [
+            Chunk(0, (width / 2 - 256, height / 2 - 256))
+        ]
+
+        for chunk in self.chunks:
+            chunk.enable(batch)
+
+    def update(self, dt):
+        # the scale added will depend on the camera's movement speed.
+        camera_rect = self.camera.rectangle.scale(200., 200.)
+        for chunk in self.chunks:
+            if not chunk.disabled:
+                if not camera_rect.intersects(chunk.rectangle):
+                    chunk.disable()
+            else:
+                if camera_rect.intersects(chunk.rectangle):
+                    chunk.enable(self.batch)
 
 
 class Camera:
