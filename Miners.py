@@ -153,8 +153,18 @@ class Board:
         # We only need to load 9 chunks at any time,
         # but we'd need to find some way to cache
         # the already loaded chunks that are out of view.
+        w2 = width / 2
+        h2 = height / 2
         self.chunks = [
-            Chunk(0, (width / 2 - 256, height / 2 - 256))
+            Chunk(0, (w2 - 512, h2 - 512)),
+            Chunk(1, (w2 - 256, h2 - 512)),
+            Chunk(2, (w2 + 256, h2 - 512)),
+            Chunk(3, (w2 - 512, h2 - 256)),
+            Chunk(4, (w2 - 256, h2 - 256)),
+            Chunk(5, (w2 + 256, h2 - 256)),
+            Chunk(6, (w2 - 512, h2 + 256)),
+            Chunk(7, (w2 - 256, h2 + 256)),
+            Chunk(8, (w2 + 256, h2 + 256))
         ]
 
         for chunk in self.chunks:
