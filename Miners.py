@@ -74,6 +74,22 @@ line_quad = Shape(
 )
 
 
+@dataclass
+class Rectangle:
+    x: float
+    y: float
+    w: float
+    h: float
+
+    def intersects(self, rect: "Rectangle"):
+        return not (
+            rect.x > self.x + self.w
+            or rect.x + rect.w < self.x
+            or rect.y > self.y + self.h
+            or rect.y + rect.h < self.y
+        )
+
+
 class Block:
     __slots__ = ["broken", "vbo"]
     shape = line_quad
@@ -154,6 +170,10 @@ class Camera:
         )
 
         pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
+
+    @property
+    def rectangle(self) -> Rectangle:
+        return Rectangle(self.x, self.y, self.width, self.height)
 
 
 class Simulation:
