@@ -22,6 +22,38 @@ from intersections import Rectangle
 from shapes import line_quad
 
 
+class Camera:
+    __slots__ = ['x', 'y', "width", "height"]
+
+    near = -1.
+    far = 1.
+
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    def move(self, dx, dy):
+        self.x -= 10. * dx
+        self.y -= 10. * dy
+
+    def project(self):
+        pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
+        pyglet.gl.glLoadIdentity()
+        pyglet.gl.glOrtho(
+            self.x, self.x + self.width,
+            self.y, self.y + self.height,
+            self.near, self.far
+        )
+
+        pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
+
+    @property
+    def rectangle(self) -> Rectangle:
+        return Rectangle(self.x, self.y, self.width, self.height)
+
+
 class Block:
     __slots__ = ["broken", "vbo"]
     shape = line_quad
@@ -118,38 +150,6 @@ class Board:
             else:
                 if camera_rect.intersects(chunk.rectangle):
                     chunk.enable(self.batch)
-
-
-class Camera:
-    __slots__ = ['x', 'y', "width", "height"]
-
-    near = -1.
-    far = 1.
-
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-
-    def move(self, dx, dy):
-        self.x -= 10. * dx
-        self.y -= 10. * dy
-
-    def project(self):
-        pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
-        pyglet.gl.glLoadIdentity()
-        pyglet.gl.glOrtho(
-            self.x, self.x + self.width,
-            self.y, self.y + self.height,
-            self.near, self.far
-        )
-
-        pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
-
-    @property
-    def rectangle(self) -> Rectangle:
-        return Rectangle(self.x, self.y, self.width, self.height)
 
 
 class Simulation:
