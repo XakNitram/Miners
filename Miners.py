@@ -191,9 +191,10 @@ class Board:
 
 
 class Simulation:
-    def __init__(self, width, height):
+    def __init__(self, width, height, framerate):
         self.width = width
         self.height = height
+        self.framerate = framerate
 
         self.window = pyglet.window.Window(
             width=self.width, height=self.height,
@@ -227,7 +228,7 @@ class Simulation:
 
     def setup(self):
         pyglet.clock.schedule_interval(
-            self.update, 1. / 60.
+            self.update, 1. / self.framerate
         )
 
     def run(self):
@@ -236,5 +237,5 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    sim = Simulation(800, 640)
+    sim = Simulation(800, 640, 60.)
     sim.run()
