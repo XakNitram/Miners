@@ -20,6 +20,9 @@ from pyglet.graphics.vertexdomain import VertexList
 from graph import Graph
 from intersections import Rectangle
 from shapes import line_quad
+from timer import Timer
+
+global_timer = Timer()
 
 
 class Camera:
