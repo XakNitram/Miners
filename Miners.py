@@ -15,9 +15,9 @@ else, we add to the batch.
 from typing import List, Tuple, Optional
 
 import pyglet
-
 from pyglet.graphics.vertexdomain import VertexList
 
+from graph import Graph
 from intersections import Rectangle
 from shapes import line_quad
 
@@ -200,6 +200,8 @@ class Simulation:
             width=self.width, height=self.height,
             vsync=True,
         )
+        # self.fps = pyglet.window.FPSDisplay(self.window)
+        self.fps = Graph(0, height - 100, 200, 100, 2, 2, 60, 60.)
 
         self.keys = pyglet.window.key.KeyStateHandler()
         self.window.push_handlers(self.keys)
@@ -217,6 +219,8 @@ class Simulation:
         self.camera.move(dx, dy)
 
         self.board.update(dt)
+        self.fps.push(1/dt)
+        self.fps.update(dt)
 
     def on_draw(self):
         self.window.clear()
@@ -225,6 +229,7 @@ class Simulation:
 
         with self.gui_camera:
             self.gui_camera.rectangle.scale(-200., -200.).draw()
+            self.fps.draw()
 
     def setup(self):
         pyglet.clock.schedule_interval(
