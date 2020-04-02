@@ -4,6 +4,7 @@ from typing import Optional, Tuple, List
 
 from pyglet.graphics.vertexdomain import VertexList
 
+from common import global_timer
 from intersections import Rectangle
 from shapes import line_quad
 

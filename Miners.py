@@ -17,10 +17,8 @@ import pyglet
 
 from board import Board
 from camera import Camera
+from common import global_timer
 from graph import Graph
-from timer import Timer
-
-global_timer = Timer()
 
 
 class Simulation:
