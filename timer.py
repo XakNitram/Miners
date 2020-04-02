@@ -44,3 +44,8 @@ class Timer:
             key: (operation.mean / operation.iterations, operation.min, operation.max)
             for key, operation in self.times.items()
         }
+
+    def show(self):
+        for function_name, time_data in self.calculate().items():
+            mean_s, min_s, max_s = time_data
+            print(f"    {function_name}: {mean_s:.7f} ({min_s:.7f} min) ({max_s:.7f} max)")
