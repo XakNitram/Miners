@@ -41,6 +41,10 @@ class Simulation:
         self.batch = pyglet.graphics.Batch()
         self.camera = Camera(10)
         self.gui_camera = Camera(10)
+        self.position_label = pyglet.text.Label(
+            "x=0, y=0", font_name="consolas",
+            x=2, y=self.height - 118
+        )
 
         self.board = Board(self.batch, self.camera, self.width, self.height)
 
@@ -48,6 +52,8 @@ class Simulation:
         dx = self.keys[pyglet.window.key.D] - self.keys[pyglet.window.key.A]
         dy = self.keys[pyglet.window.key.W] - self.keys[pyglet.window.key.S]
         self.camera.move(dx, dy)
+        x, y = self.camera.position
+        self.position_label.text = f"x={x}, y={y}"
 
         self.board.update(dt)
         self.fps.push(1/dt)
@@ -59,6 +65,7 @@ class Simulation:
             self.batch.draw()
 
         with self.gui_camera:
+            self.position_label.draw()
             self.gui_camera.rectangle.scale(-200., -200.).draw()
             self.fps.draw()
 
