@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Tuple
 
 from pyglet.graphics import draw_indexed
 from pyglet.gl import GL_LINES
@@ -18,6 +19,10 @@ class Rectangle:
             or other.y > self.y + self.h
             or other.y + other.h < self.y
         )
+
+    @property
+    def center(self) -> Tuple[float, float]:
+        return self.x + self.w / 2, self.y + self.h / 2
 
     def scale(self, sx: float, sy: float):
         """
