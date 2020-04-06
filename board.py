@@ -1,12 +1,13 @@
 from collections import deque
 from dataclasses import dataclass
 from random import random, shuffle, randrange
-from typing import Optional, Tuple, List, Deque
+from typing import Optional, Tuple, List, Deque, Set, Union
 
 from pyglet import gl
-from pyglet.graphics import Group, OrderedGroup
+from pyglet.graphics import Group, OrderedGroup, Batch
 from pyglet.graphics.vertexdomain import VertexList
 
+from camera import Camera
 from common import global_timer
 from intersections import Rectangle
 from shapes import quad, line_quad
@@ -128,80 +129,97 @@ class Chunk:
         return Rectangle(ox, oy, scale, scale)
 
 
-class Board:
-    """Collection of chunks."""
-    def __init__(self, batch, camera, width, height):
-        self.batch = batch
-        self.camera = camera
+class ChunkCollection:
+    """Construct to handle chunk loading and unloading."""
 
-        # We only need to load 9 chunks at any time,
-        # but we'd need to find some way to cache
-        # the already loaded chunks that are out of view.
-        w2 = width / 2
-        h2 = height / 2
+    def __init__(self, initial_width, initial_height):
+        self.chunks: List[Chunk] = []
+
+        w2 = initial_width / 2
+        h2 = initial_height / 2
         cx = cy = 16 * Chunk.BLOCK_SIZE
+        xr = yr = 5
+
         # self.chunks = [
-        #     Chunk(0, (w2 - cx * 1.5, h2 - cy * 1.5)),
-        #     Chunk(1, (w2 - cy * 0.5, h2 - cy * 1.5)),
-        #     Chunk(2, (w2 + cy * 0.5, h2 - cy * 1.5)),
-        #     Chunk(3, (w2 - cx * 1.5, h2 - cy * 0.5)),
-        #     Chunk(4, (w2 - cy * 0.5, h2 - cy * 0.5)),
-        #     Chunk(5, (w2 + cy * 0.5, h2 - cy * 0.5)),
-        #     Chunk(6, (w2 - cx * 1.5, h2 + cy * 0.5)),
-        #     Chunk(7, (w2 - cy * 0.5, h2 + cy * 0.5)),
-        #     Chunk(8, (w2 + cy * 0.5, h2 + cy * 0.5))
+        #     Chunk(0, (offset_x0, offset_y0)),
+        #     Chunk(1, (offset_x1, offset_y1)),
+        #     Chunk(2, (offset_x2, offset_y2)),
+        #         ...,
+        #     CHunk(n, (w2 + cx * (n - xr / 2, h2 + cy * (n - xr / 2))
         # ]
 
-        self.chunks: List[Chunk] = []
-        xr = 5
-        yr = 5
         for j in range(yr):
             for i in range(xr):
                 index = j * yr + i
-                self.chunks.append(
-                    Chunk(index, (w2 + (cx * (i - 2.5)), h2 + (cy * (j - 2.5))))
-                )
 
-        self.showing = set()
-        self.hiding = set()
-        self.processing: int = -1
+                self.chunks.append(Chunk(index, (
+                    w2 + cx * (i - xr / 2),
+                    h2 + cy * (j - yr / 2)
+                )))
+
+        self.loading: List[Set[int]] = [
+            set(),  # load vbos
+            set(),  # delete vbos
+            set(),  # load data
+            set()   # save data
+        ]
+
+        self.current: int = -1
+
+    def __getitem__(self, item: Union[int, slice]) -> Chunk:
+        return self.chunks[item]
+
+    def process(self, batch: Batch, view_box: Rectangle):
+        visible, hidden, available, unavailable = self.loading
+
+        for i, chunk in enumerate(self.chunks):
+            if not chunk.visible and view_box.intersects(chunk.rectangle):
+                visible.add(i)
+                chunk.visible = True
+
+                if i in hidden:
+                    hidden.discard(i)
+            elif chunk.visible and not view_box.intersects(chunk.rectangle):
+                hidden.add(i)
+                chunk.visible = False
+
+                if i in visible:
+                    visible.discard(i)
+
+        showing = len(visible)
+        hiding = len(hidden)
+
+        if showing and (hiding == 0 or random() > 0.5) and self.current < 0:
+            index = visible.pop()
+            chunk = self[index]
+            chunk.show(batch, view_box)
+
+            self.current = index
+
+        elif hiding and (showing == 0 or random() > 0.5):
+            chunk = self[hidden.pop()]
+            chunk.hide()
+
+        if self.current > -1:
+            chunk = self[self.current]
+            if chunk.process(batch):
+                self.current = -1
+
+
+class Board:
+    """Collection of chunks."""
+    def __init__(
+            self, batch: Batch, camera: Camera,
+            init_width: int, init_height: int
+    ):
+        self.batch = batch
+        self.camera = camera
+
+        self.chunks: ChunkCollection = ChunkCollection(init_width, init_height)
 
     def update(self, dt):
         # the scale added will depend on the camera's movement speed.
-        # camera_rect = self.camera.rectangle.scale(-200., -200.)
-        camera_rect = self.camera.rectangle
-        for i, chunk in enumerate(self.chunks):
-            if not chunk.visible and camera_rect.intersects(chunk.rectangle):
-                self.showing.add(i)
-                chunk.visible = True
+        view_box = self.camera.rectangle.scale(-200., -200.)
+        # view_box = self.camera.rectangle
 
-                if i in self.hiding:
-                    self.hiding.discard(i)
-            elif chunk.visible and not camera_rect.intersects(chunk.rectangle):
-                self.hiding.add(i)
-                chunk.visible = False
-
-                if i in self.showing:
-                    self.showing.discard(i)
-
-        # Load one sub-chunk per frame
-        # Unload one full chunk per frame
-        loads = len(self.showing)
-        unloads = len(self.hiding)
-
-        if loads and (unloads == 0 or random() > 0.5) and self.processing < 0:
-            index = self.showing.pop()
-            chunk = self.chunks[index]
-            chunk.show(self.batch, self.camera)
-
-            self.processing = index
-
-        elif unloads and (loads == 0 or random() < 0.5):
-            chunk = self.chunks[self.hiding.pop()]
-            chunk.hide()
-
-        if self.processing > -1:
-            chunk = self.chunks[self.processing]
-            if chunk.process(self.batch):
-                self.processing = -1
-
+        self.chunks.process(self.batch, view_box)
