@@ -6,11 +6,43 @@ from typing import Optional, Tuple, List, Deque, Set, Union
 from pyglet import gl
 from pyglet.graphics import Group, OrderedGroup, Batch
 from pyglet.graphics.vertexdomain import VertexList
+from pyglet.image import Texture
+from pyglet.resource import texture
 
 from camera import Camera
 from common import global_timer
 from intersections import Rectangle
 from shapes import quad, line_quad
+
+
+class TextureGroup(Group):
+
+    def __init__(
+            self, tex: Texture,
+            parent: Group = None
+    ):
+        super().__init__(parent)
+        self.texture = tex
+        self.blend_src = gl.GL_SRC_ALPHA
+        self.blend_dest = gl.GL_ONE_MINUS_SRC_ALPHA
+
+    def set_state(self):
+        gl.glEnable(self.texture.target)
+        gl.glBindTexture(self.texture.target, self.texture.id)
+
+        gl.glTexParameteri(
+            gl.GL_TEXTURE_2D,
+            gl.GL_TEXTURE_MAG_FILTER,
+            gl.GL_NEAREST
+        )
+
+        gl.glPushAttrib(gl.GL_COLOR_BUFFER_BIT)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(self.blend_src, self.blend_dest)
+
+    def unset_state(self):
+        gl.glPopAttrib()
+        gl.glDisable(self.texture.target)
 
 
 @dataclass
@@ -26,13 +58,21 @@ class Block:
     value: int = 0
 
 
+# TEXTURES = [
+#         texture("Data/Environment/FLOOR_01.png"),
+#         texture("Data/Environment/FLOOR_02.png"),
+#         texture("Data/Environment/FLOOR_03.png")
+#     ]
+
 BLOCKS = OrderedGroup(0)
 BORDER = OrderedGroup(1)
+# GROUPS = [TextureGroup(TEXTURES[i], BLOCKS) for i in range(3)]
 
 
 class Chunk:
+    # BLOCK_SHAPE = quad
     BLOCK_SHAPE = line_quad
-    BLOCK_SIZE = 8
+    BLOCK_SIZE = 16
 
     def __init__(self, name: int, offset: Tuple[float, float]):
         self.blocks: List[Block] = [Block(value=randrange(3)) for _ in range(256)]
@@ -63,8 +103,10 @@ class Chunk:
 
             self.show_queue.clear()
             # self.text.delete()
-            # self.bound.delete()
-            # self.bound = None
+
+            if self.bound is not None:
+                self.bound.delete()
+                self.bound = None
 
     def show(self, batch, camera):
         """Enable the chunk. Will be later converted to asynchronous code."""
@@ -85,13 +127,13 @@ class Chunk:
                     self.show_queue.append((i, j))
             shuffle(self.show_queue)
 
-            # self.bound = line_quad.add_to_batch(
-            #     batch, BORDER, (
-            #         'v4f', line_quad.transform_no_rotate(
-            #             ox, oy, 16 * self.BLOCK_SIZE, 16 * self.BLOCK_SIZE
-            #         ).flatten()
-            #     )
-            # )
+            self.bound = line_quad.add_to_batch(
+                batch, BORDER, (
+                    'v4f', line_quad.transform_no_rotate(
+                        ox, oy, 16 * self.BLOCK_SIZE, 16 * self.BLOCK_SIZE
+                    ).flatten()
+                )
+            )
 
     def process(self, batch) -> bool:
         if not len(self.show_queue):
@@ -105,7 +147,8 @@ class Chunk:
                 for m in range(4):
                     index = (j * 64) + (i * 16) + (n * 4) + m
                     # value = self.blocks[index].value
-                    group = BLOCKS
+                    group = None
+                    # group = GROUPS[value]
                     self.vbos[index] = self.BLOCK_SHAPE.add_to_batch(
                         batch, group, (
                             'v4f/static', self.BLOCK_SHAPE.transform_no_rotate(
@@ -114,10 +157,7 @@ class Chunk:
                                 scale, scale
                             ).flatten()),
                         ('c3f/static', [1., 0., 0.] * 4)
-                    )
-                    block.update(
-                        float((i & 0xFF) * block.size + ox),
-                        float((j & 0xFF) * block.size + oy)
+                        # ("t3f", TEXTURES[value].tex_coords)
                     )
 
         return False
