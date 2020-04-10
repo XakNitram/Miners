@@ -23,7 +23,10 @@ class Shape:
             [dx,               dy,              0., 1.]
         ], dtype=float)
 
-    def transform_no_rotate(self, dx: float, dy: float, sx: float, sy: float):
+    def transform_no_rotate(
+            self, dx: float, dy: float,
+            sx: float, sy: float
+    ) -> np.ndarray:
         return self.mesh @ np.array([
             [sx, 0., 0., 0.],
             [0., sy, 0., 0.],
