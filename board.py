@@ -80,7 +80,6 @@ class Chunk:
         self.offset = offset
         self.visible = False
 
-        # self.text = None
         self.bound = None
 
         self.show_queue: Deque[Tuple[int, int]] = deque(maxlen=16)
@@ -101,7 +100,6 @@ class Chunk:
                     self.vbos[i] = None
 
             self.show_queue.clear()
-            # self.text.delete()
 
             if self.bound is not None:
                 self.bound.delete()
@@ -113,11 +111,6 @@ class Chunk:
 
         if self.visible:
             ox, oy = self.offset
-            # self.text = pyglet.text.Label(
-            #     str(self.name), align='center',
-            #     x=ox + 504, y=ox + 504, width=512, height=512,
-            #     batch=batch
-            # )
             self.show_queue.clear()
 
             # load in 4 x 4 squares
