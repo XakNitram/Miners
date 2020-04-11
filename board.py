@@ -10,7 +10,7 @@ from pyglet.image import Texture
 from pyglet.resource import texture
 
 from camera import Camera
-from common import global_timer, BLOCK_SIZE
+from common import global_timer, GRID_SIZE
 from intersections import Rectangle
 from shapes import quad, line_quad
 
@@ -129,7 +129,7 @@ class Chunk:
             self.bound = line_quad.add_to_batch(
                 batch, BORDER, (
                     'v4f', line_quad.transform_no_rotate(
-                        ox, oy, 16 * BLOCK_SIZE, 16 * BLOCK_SIZE
+                        ox, oy, 16 * GRID_SIZE, 16 * GRID_SIZE
                     ).flatten()
                 )
             )
@@ -138,7 +138,7 @@ class Chunk:
         if not len(self.show_queue):
             return True
 
-        scale = BLOCK_SIZE
+        scale = GRID_SIZE
         ox, oy = self.offset
         for _ in range(4):
             i, j = self.show_queue.pop()
@@ -164,7 +164,7 @@ class Chunk:
     @property
     def rectangle(self) -> Rectangle:
         ox, oy = self.offset
-        scale = 16 * BLOCK_SIZE
+        scale = 16 * GRID_SIZE
         return Rectangle(ox, oy, scale, scale)
 
 
@@ -176,7 +176,7 @@ class ChunkCollection:
 
         w2 = initial_width / 2
         h2 = initial_height / 2
-        cx = cy = 16 * BLOCK_SIZE
+        cx = cy = 16 * GRID_SIZE
         xr = yr = 5
 
         # self.chunks = [
