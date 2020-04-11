@@ -10,7 +10,7 @@ from pyglet.image import Texture
 from pyglet.resource import texture
 
 from camera import Camera
-from common import global_timer
+from common import global_timer, BLOCK_SIZE
 from intersections import Rectangle
 from shapes import quad, line_quad
 
@@ -72,7 +72,6 @@ BORDER = OrderedGroup(1)
 class Chunk:
     # BLOCK_SHAPE = quad
     BLOCK_SHAPE = line_quad
-    BLOCK_SIZE = 16
 
     def __init__(self, name: int, offset: Tuple[float, float]):
         self.blocks: List[Block] = [Block(value=randrange(3)) for _ in range(256)]
@@ -130,7 +129,7 @@ class Chunk:
             self.bound = line_quad.add_to_batch(
                 batch, BORDER, (
                     'v4f', line_quad.transform_no_rotate(
-                        ox, oy, 16 * self.BLOCK_SIZE, 16 * self.BLOCK_SIZE
+                        ox, oy, 16 * BLOCK_SIZE, 16 * BLOCK_SIZE
                     ).flatten()
                 )
             )
@@ -139,7 +138,7 @@ class Chunk:
         if not len(self.show_queue):
             return True
 
-        scale = self.BLOCK_SIZE
+        scale = BLOCK_SIZE
         ox, oy = self.offset
         for _ in range(4):
             i, j = self.show_queue.pop()
@@ -165,7 +164,7 @@ class Chunk:
     @property
     def rectangle(self) -> Rectangle:
         ox, oy = self.offset
-        scale = 16 * Chunk.BLOCK_SIZE
+        scale = 16 * BLOCK_SIZE
         return Rectangle(ox, oy, scale, scale)
 
 
@@ -177,7 +176,7 @@ class ChunkCollection:
 
         w2 = initial_width / 2
         h2 = initial_height / 2
-        cx = cy = 16 * Chunk.BLOCK_SIZE
+        cx = cy = 16 * BLOCK_SIZE
         xr = yr = 5
 
         # self.chunks = [
