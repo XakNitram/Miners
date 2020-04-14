@@ -1,5 +1,6 @@
 from collections import deque
 from dataclasses import dataclass
+from math import atan2, tau
 from random import random, shuffle, randrange
 from typing import Optional, Tuple, List, Deque, Set, Union
 
@@ -8,6 +9,7 @@ from pyglet.graphics import Group, OrderedGroup, Batch
 from pyglet.graphics.vertexdomain import VertexList
 from pyglet.image import Texture
 from pyglet.resource import texture
+from pyglet.sprite import Sprite
 
 from camera import Camera
 from common import global_timer, GRID_SIZE
@@ -52,6 +54,12 @@ class Position:
 
 
 @dataclass
+class Index:
+    i: int = 0
+    j: int = 0
+
+
+@dataclass
 class Block:
     # position: Position = Position(0., 0.)  # why did we want this?
     broken: bool = False
@@ -63,10 +71,57 @@ class Block:
 #         texture("Data/Environment/FLOOR_02.png"),
 #         texture("Data/Environment/FLOOR_03.png")
 #     ]
-
+#
+# MINER_TEXTURE = texture("Data/Environment/pickaxe.png")
+# MINER_TEXTURE.width *= 2
+# MINER_TEXTURE.height *= 2
+#
 BLOCKS = OrderedGroup(0)
-BORDER = OrderedGroup(1)
+MINERS = OrderedGroup(1)
+BORDER = OrderedGroup(2)
 # GROUPS = [TextureGroup(TEXTURES[i], BLOCKS) for i in range(3)]
+
+
+class Miner:
+    SPEED = 1.
+
+    def __init__(self, x, y, batch: Batch):
+        self.position = Position(x, y)
+        self.index = Index()
+
+        # self.sprite = Sprite(
+        #     MINER_TEXTURE, self.position.x, self.position.y,
+        #     batch=batch, group=MINERS, subpixel=True
+        # )
+
+        self.vbo = batch.add_indexed(
+            4, quad.mode, MINERS, quad.indices,
+            ('v4f', quad.transform_no_rotate(x, y, GRID_SIZE, GRID_SIZE).flatten())
+        )
+
+        self.move_time = 0.
+
+    def teleport(self):
+        size = GRID_SIZE
+
+        i = randrange(1, -2, -1)
+        j = randrange(1, -2, -1)
+        self.index.i += i
+        self.index.j += j
+        x = self.position.x + i * size
+        y = self.position.y + j * size
+
+        # self.sprite.update(x, y)
+        self.vbo.vertices = quad.transform_no_rotate(x, y, size, size).flatten()
+        self.position.x = x
+        self.position.y = y
+
+    def update(self, dt: float):
+        self.move_time += dt
+
+        if self.move_time >= self.SPEED:
+            self.move_time = 0.
+            self.teleport()
 
 
 class Chunk:
@@ -105,15 +160,44 @@ class Chunk:
                 self.bound.delete()
                 self.bound = None
 
-    def show(self, batch, camera):
-        """Enable the chunk. Will be later converted to asynchronous code."""
+    def show(self, batch: Batch, view_box: Rectangle):
+        """Start the chunk loading process."""
         # print(f"enabling the chunk {self.name}")
 
         if self.visible:
             ox, oy = self.offset
             self.show_queue.clear()
 
-            # load in 4 x 4 squares
+            # angle-based loading
+            # vx, vy = view_box.center
+            # sx, sy = self.rectangle.center
+            #
+            # # load in 4 x 4 squares
+            # angle = atan2(vy - sy, vx - sx) % tau
+            # t16 = tau / 16
+            # if t16 * 15 < angle + tau < tau + t16:
+            #     for i in range(4):
+            #         for j in range(4):
+            #             self.show_queue.append((i, j))
+            # elif t16 < angle < tau * 3:
+            #     for n in range(1, -1, -1):
+            #         for m in range(1, -1, -1):
+            #             for j in range(1, -1, -1):
+            #                 for i in range(1, -1, -1):
+            #                     self.show_queue.append((m * 2 + i, n * 2 + j))
+            # elif t16 * 7 < angle < t16 * 9:
+            #     for i in range(3, -1, -1):
+            #         for j in range(4):
+            #             self.show_queue.append((i, j))
+            # elif t16 * 3 < angle < t16 * 5:
+            #     for j in range(4):
+            #         for i in range(3, -1, -1):
+            #             self.show_queue.append((i, j))
+            # elif t16 * 11 < angle < t16 * 13:
+            #     for j in range(3, -1, -1):
+            #         for i in range(4):
+            #             self.show_queue.append((i, j))
+
             for j in range(4):
                 for i in range(4):
                     self.show_queue.append((i, j))
@@ -139,7 +223,7 @@ class Chunk:
                 for m in range(4):
                     index = (j * 64) + (i * 16) + (n * 4) + m
                     # value = self.blocks[index].value
-                    group = None
+                    group = BLOCKS
                     # group = GROUPS[value]
                     self.vbos[index] = self.BLOCK_SHAPE.add_to_batch(
                         batch, group, (
@@ -148,7 +232,7 @@ class Chunk:
                                 (j * 4 + n) * scale + oy,
                                 scale, scale
                             ).flatten()),
-                        ('c3f/static', [1., 0., 0.] * 4)
+                        ('c3B/static', [0x3e, 0x41, 0x4e] * 4)
                         # ("t3f", TEXTURES[value].tex_coords)
                     )
 
@@ -161,7 +245,7 @@ class Chunk:
         return Rectangle(ox, oy, scale, scale)
 
 
-class ChunkCollection:
+class ChunkGrid:
     """Construct to handle chunk loading and unloading."""
 
     def __init__(self, initial_width, initial_height):
@@ -201,7 +285,7 @@ class ChunkCollection:
     def __getitem__(self, item: Union[int, slice]) -> Chunk:
         return self.chunks[item]
 
-    def process(self, batch: Batch, view_box: Rectangle):
+    def process_graphics(self, batch: Batch, view_box: Rectangle):
         visible, hidden, available, unavailable = self.loading
 
         for i, chunk in enumerate(self.chunks):
@@ -247,11 +331,21 @@ class Board:
         self.batch = batch
         self.camera = camera
 
-        self.chunks: ChunkCollection = ChunkCollection(init_width, init_height)
+        self.chunks: ChunkGrid = ChunkGrid(init_width, init_height)
+        ox, oy = self.chunks[12].offset
+        i, j = randrange(16), randrange(16)
+        x = (i * GRID_SIZE) + ox
+        y = (j * GRID_SIZE) + oy
+        self.miners = []
+        for i in range(10):
+            self.miners.append(Miner(x, y, batch))
 
+    @global_timer.timed
     def update(self, dt):
         # the scale added will depend on the camera's movement speed.
-        view_box = self.camera.rectangle.scale(-200., -200.)
-        # view_box = self.camera.rectangle
+        # view_box = self.camera.rectangle.scale(-200., -200.)
+        view_box = self.camera.rectangle
 
-        self.chunks.process(self.batch, view_box)
+        for miner in self.miners:
+            miner.update(dt)
+        self.chunks.process_graphics(self.batch, view_box)
